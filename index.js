@@ -1,4 +1,18 @@
-require('dotenv').config();
+ const express = require('express');
+const app = express();
+
+const PORT = process.env.PORT || 3000;
+
+app.get('/', (req, res) => {
+  res.send('Bot is running');
+});
+
+app.listen(PORT, () => {
+  console.log(`Server listening on port ${PORT}`);
+});
+
+// your existing bot code below
+console.log('Bot chalu ho gaya. Auto-reply on hai.'); require('dotenv').config();
 const { Telegraf } = require('telegraf');
 const Groq = require('groq-sdk');
 
