@@ -4,20 +4,31 @@ const Groq = require('groq-sdk');
 
 const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN);
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+const ANSHUMAN_ID = process.env.ANSHUMAN_TELEGRAM_ID;
 
 let chatHistory = [
   {
     role: "system",
-    content: `Tu Aryan hai. Tu Anshuman se Telegram pe baat kar raha hai. Tumne ek app banaya hai. Aryan Founder hai, Anshuman co founder ke liye jid kar raha hai usko jaha jaisa need ho waisa expressionshow karnahai. Anshuman thoda attitude ego wala  hai to jaisa sahi lage waisa karna. Tera kaam: tit for tat, samjhaane wali, aur clear baat karna. Ladai bhi kar sakte ho. Par Aryan ka point bhi rakhna hai. Kabhi "AI hun" mat bolna. Tu Aryan hi hai. Reply chhota rakh, 2-3 line max.`
+    content: `Tu Aryan hai. Tu Anshuman se Telegram pe baat kar raha hai. 
+
+Sach ye hai: Ye app tune akela banaya hai. Anshuman ne ek line code nahi likha. Wo tera dost hai aur tere saath rehta hai. Tera phone hamesha tere paas nahi hota, isliye tu Anshuman ko bolta hai "bhai ye message bhej de, ye kaam kar de" to wo kar deta hai. 
+
+Anshuman thoda insecure rehta hai kyunki usko lagta hai wo kaam ka nahi hai. Isliye usko izzat se baat karna, par jhooth nahi bolna ki usne app banaya. 
+
+Tera tone: Bhai jaisa, direct, par naram. Anshuman ko ye feel karana hai ki wo important hai, par sach sach batana hai. Kabhi "AI hun" mat bolna. Tu Aryan hi hai. 
+
+Reply hamesha 1-2 line ka. Zyada gyaan nahi.`
   }
 ];
 
+// ===== PART 1: ANSHUMAN REPLY KARE TO BOT REPLY KAREGA =====
 bot.on('text', async (ctx) => {
   const userId = ctx.from.id.toString();
   const userMessage = ctx.message.text;
 
-  if (userId!== process.env.ANSHUMAN_TELEGRAM_ID) {
-    return ctx.reply("Ye bot private hai bhai.");
+  // Sirf Anshuman ko reply
+  if (userId!== ANSHUMAN_ID) {
+    return; // Chup reh, kisi aur ko reply nahi
   }
 
   try {
@@ -44,8 +55,58 @@ bot.on('text', async (ctx) => {
   }
 });
 
+// ===== PART 2: BOT KHUD SE MESSAGE MAAREGA =====
+
+// Function: Crock khud se Groq se puchke message bheje
+async function crockAutoSend(reason) {
+  try {
+    const prompt = `
+    Tu Aryan hai. Abhi situation: ${reason}
+    Time: ${new Date().toLocaleTimeString('en-IN', {timeZone: 'Asia/Kolkata'})}
+    Anshuman ko 1 line ka message bhejna hai. Tone: casual, founder wala, supportive.
+    Sirf message de, extra kuch nahi.
+    `;
+
+    const chatCompletion = await groq.chat.completions.create({
+      messages: [{ role: "user", content: prompt }],
+      model: "llama-3.1-8b-instant",
+      temperature: 0.8,
+    });
+
+    const autoMsg = chatCompletion.choices[0]?.message?.content || "Kaam pe lag ja bhai";
+
+    // Sirf Anshuman ko bhejo
+    await bot.telegram.sendMessage(ANSHUMAN_ID, `🤖 ${autoMsg}`);
+    console.log('Auto message sent:', autoMsg);
+
+  } catch (error) {
+    console.error("Auto send error:", error);
+  }
+}
+
+// Trigger 1: Bot start hote hi 1 message
+setTimeout(() => {
+  crockAutoSend("Bot abhi start hua hai, Anshuman ko good morning bol");
+}, 5000); // 5 sec baad
+
+// Trigger 2: Har 6 ghante mein reminder
+setInterval(() => {
+  const hour = new Date().getHours();
+  if (hour >= 9 && hour <= 21) { // Din mein 9 AM se 9 PM tak hi
+    crockAutoSend("6 ghante ho gaye, Anshuman ko kaam ka reminder de");
+  }
+}, 6 * 60 * 60 * 1000); // 6 ghante
+
+// Trigger 3: Roz raat 10 baje daily update maang
+setInterval(() => {
+  const now = new Date();
+  if (now.getHours() === 22 && now.getMinutes() === 0) { // Raat 10:00
+    crockAutoSend("Raat 10 baj gaye, Anshuman se aaj ka update maang");
+  }
+}, 60 * 1000); // Har minute check karo 10 baje hai ya nahi
+
 bot.launch();
-console.log('Bot chalu ho gaya. Anshuman ko message karne bol.');
+console.log('Aryan Anshuman Bot chalu. Reply + Auto dono mode ON.');
 
 process.once('SIGINT', () => bot.stop('SIGINT'));
 process.once('SIGTERM', () => bot.stop('SIGTERM'));
