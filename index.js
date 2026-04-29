@@ -1,3 +1,11 @@
+const express = require('express');
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.get('/', (req, res) => res.send('Aryan Bot is Running'));
+app.listen(PORT, () => console.log(`Dummy server running on ${PORT}`));
+
+// इसके नीचे तेरा बॉट वाला कोड जैसे का तैसा
 require('dotenv').config();
 const { Telegraf } = require('telegraf');
 const Groq = require('groq-sdk');
